@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "M03_Bounce"
+rootProject.name = "meteor_catch"
 include ':app'
