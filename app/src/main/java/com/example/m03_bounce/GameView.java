@@ -1,23 +1,8 @@
-/*
- * Copyright (C) 2024 Nick Richardson
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.example.m03_bounce;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -25,13 +10,15 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 /**
- * The GameView class represents the main view of the game, handling the game loop and rendering.
+ * Created by Russ on 08/04/2014.
  */
 public class GameView extends View implements SensorEventListener {
 
@@ -40,7 +27,6 @@ public class GameView extends View implements SensorEventListener {
     private boolean isGameStarted = false;
     private int score;
     private int record;
-    private boolean isGamePaused = false;
     private Basket basket;
     private TextView scoreView;
     private TextView recordView;
@@ -52,12 +38,6 @@ public class GameView extends View implements SensorEventListener {
     double ay = 0;   //
     double az = 0;   //
 
-    /**
-     * Constructor for the GameView class.
-     *
-     * @param context The context of the application
-     * @param attrs The attribute set
-     */
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
@@ -69,29 +49,20 @@ public class GameView extends View implements SensorEventListener {
         Log.d("GameView", "Creating falling object");
         fallingObject = createRandomFallingObject();
 
-        try {
-            gameThread = new HandlerThread("GameThread");
-            gameThread.start();
-            gameHandler = new Handler(gameThread.getLooper());
-        } catch (Exception e) {
-            Log.e("GameView", "Error creating game thread.", e);
-        }
+        gameThread = new HandlerThread("GameThread");
+        gameThread.start();
+        gameHandler = new Handler(gameThread.getLooper());
 
         this.setFocusable(true);
         this.requestFocus();
         this.setFocusableInTouchMode(true);
     }
 
-    /**
-     * Creates a random falling object (either a Coin or a Meteor).
-     *
-     * @return A new FallingObject instance
-     */
     private FallingObject createRandomFallingObject() {
         Random r = new Random();
         int chance = r.nextInt(10) + 1;
 
-        Log.d("GameView", "chance = " + chance);
+        Log.w("GameView", "chance = " + chance);
 
         if (chance <= 3) {
             return new Coin(getContext(), this);
@@ -103,6 +74,7 @@ public class GameView extends View implements SensorEventListener {
     @Override
     protected void onDraw(Canvas canvas) {
 
+        Log.v("GameView", "onDraw");
         box.draw(canvas);
         basket.draw(canvas);
 
@@ -113,14 +85,11 @@ public class GameView extends View implements SensorEventListener {
         }
     }
 
-    /**
-     * Starts a new game.
-     */
     public void onNewGame() {
         Log.d("GameView  BUTTON", "User tapped the button...GAMEVIEW");
 
         score = 0;
-        Log.d("GameView", "Score = " + score);
+        Log.w("GameView", "Score = " + score);
         scoreView.setText("Score: " + score);
         recordView.setText("");
 
@@ -128,27 +97,15 @@ public class GameView extends View implements SensorEventListener {
             isGameStarted = true;
             fallingObject.resetSpeed();
             fallingObject.resetPosition();
-            Log.d("GameView", "Game started = " + isGameStarted);
-            try {
-                gameHandler.post(gameRunnable);
-            } catch (Exception e) {
-                Log.e("GameView", "Error starting game.", e);
-            }
+            Log.w("GameView", "Game started = " + isGameStarted);
+            gameHandler.post(gameRunnable);
         }
     }
 
-    /**
-     * Sets the game started state.
-     *
-     * @param isGameStarted The game started state
-     */
     public void setGameStarted(boolean isGameStarted) {
         this.isGameStarted = isGameStarted;
     }
 
-    /**
-     * Handles the game over state.
-     */
     public void onGameOver() {
         post(new Runnable() {
             @Override
@@ -161,65 +118,30 @@ public class GameView extends View implements SensorEventListener {
         });
     }
 
-    /**
-     * Sets the TextViews for displaying the score and record.
-     *
-     * @param stextView The TextView for the score
-     * @param rTextView The TextView for the record
-     */
     public void setTextViews(TextView stextView, TextView rTextView){
         scoreView = stextView;
         recordView = rTextView;
     }
 
-    /**
-     * Updates the record if the current score is higher.
-     */
     public void updateRecord(){
         if (score > record) {
             record = score;
         }
     }
 
-    /**
-     * Releases the media player.
-     */
-    public void releaseMediaPlayer() {
-        if (basket != null) {
-            basket.release();
-        }
-    }
 
-    /**
-     * Initializes the media player.
-     */
-    public void initializeMediaPlayer() {
-        if (basket != null) {
-            basket.initializeMediaPlayer(getContext());
-        }
-    }
-
-    public void pauseGame() {
-        isGamePaused = true;
-    }
-
-    public void resumeGame() {
-        isGamePaused = false;
-        gameHandler.post(gameRunnable);
-    }
-
-    private final Runnable gameRunnable = new Runnable() {
+    private Runnable gameRunnable = new Runnable() {
         @Override
         public void run() {
-            if (isGameStarted && !isGamePaused) {
+            if (isGameStarted) {
                 fallingObject.moveWithCollisionDetection(box);
                 if (basket.collectedObject(fallingObject)) {
                     score += fallingObject.getValue();
                     scoreView.post(() -> scoreView.setText("Score: " + score));
                     updateRecord();
 
-                    double currentSpeedResistance = fallingObject.getSpeedResistance();
-                    double currentAccResistance = fallingObject.getAccResistance();
+                    double currentSpeedResistance = fallingObject.speed_resistance;
+                    double currentAccResistance = fallingObject.acc_resistance;
 
                     fallingObject = createRandomFallingObject();
 
@@ -227,7 +149,7 @@ public class GameView extends View implements SensorEventListener {
                     fallingObject.setAccResistance(currentAccResistance);
 
                     fallingObject.increaseSpeed();
-                    Log.d("GameView", "speed = " + fallingObject.getAccResistance() + " " + fallingObject.getAccResistance());
+                    Log.w("GameView", "speed = " + fallingObject.acc_resistance + " " + fallingObject.speed_resistance);
                 }
                 postInvalidate();
                 gameHandler.postDelayed(this, 16); // approx 60fps
@@ -238,9 +160,9 @@ public class GameView extends View implements SensorEventListener {
 
     @Override
     public void onSizeChanged(int w, int h, int oldW, int oldH) {
-        // Set the movement bounds for the basket
+        // Set the movement bounds for the ball
         box.set(0, 0, w, h);
-        Log.d("GameView", "onSizeChanged w=" + w + " h=" + h);
+        Log.w("BouncingBallLog", "onSizeChanged w=" + w + " h=" + h);
 
         basket = new Basket(getContext(), box);
     }
@@ -256,12 +178,16 @@ public class GameView extends View implements SensorEventListener {
 
             fallingObject.setAcc(ax, ay, az);
 
-            Log.d("onSensorChanged", "ax=" + ax + " ay=" + ay + " az=" + az);
+            Log.v("onSensorChanged", "ax=" + ax + " ay=" + ay + " az=" + az);
         }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        Log.d("onAccuracyChanged", "event=" + sensor.toString());
+        Log.v("onAccuracyChanged", "event=" + sensor.toString());
+    }
+    public void callMe() {
+        Log.v("xxxxx", "yyyyy");
+//        this.callMe();
     }
 }
