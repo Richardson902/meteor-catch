@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Nick Richardson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.m03_bounce;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,13 +28,11 @@ import android.widget.TextView;
 
 import java.util.List;
 
-// Found tutorial to do put buttons over view here:
-// https://code.tutsplus.com/tutorials/android-sdk-creating-custom-views--mobile-14548
-
+/**
+ * The MainActivity class is the entry point of the application, handling the main game setup and sensor management.
+ */
 public class MainActivity extends AppCompatActivity {
 
-
-    // bbView is our bouncing ball view
     private GameView gameView;
 
     @Override
@@ -40,25 +54,26 @@ public class MainActivity extends AppCompatActivity {
 
     // Sensors
     private SensorManager mSensorManager;
-    private Sensor my_Sensor;
+    private Sensor mySensor;
 
 
+    /**
+     * Sets up the sensors for the game.
+     */
     private void setupSensors() {
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
-        Log.v("SENSORS", "Sensor List=" + deviceSensors.toString());
 
         // Use the accelerometer.
         if (mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null){
-            my_Sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            mySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
             //my_Sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
-            Log.v("SENSORS", "my_Sensor=" + my_Sensor.toString() );
         }
         else{
             // Sorry, there are no accelerometers on your device.
             // You can't play this game.
-            Log.v("SENSORS", "NO SENSOR TYPE?" );
+            Log.d("SENSORS", "NO SENSOR TYPE?" );
         }
     }
 
@@ -68,26 +83,40 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         if (gameView !=null) {
-            Log.v("SENSORS", "onResume bouncingBallView=" + gameView.toString());
-            if (my_Sensor !=null) {
-                Log.v("SENSORS", "onResume my_Sensor=" + my_Sensor.toString());
-                mSensorManager.registerListener((SensorEventListener) gameView, my_Sensor, SensorManager.SENSOR_DELAY_NORMAL);
+            if (mySensor !=null) {
+                mSensorManager.registerListener((SensorEventListener) gameView, mySensor, SensorManager.SENSOR_DELAY_NORMAL);
             }
+            gameView.initializeMediaPlayer(); // initialize the media player on resume
+            gameView.resumeGame(); // change flag to resume the game
         } else {
-            Log.v("SENSORS", "onResume bouncingBallView=null");
+            Log.d("SENSORS", "onResume gameView is null" );
         }
-        Log.v("SENSORS", "onResume ACCELLEROMETER" );
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mSensorManager.unregisterListener((SensorEventListener) gameView);
-        Log.v("SENSORS", "onPause ACCELLEROMETER" );
+        if (gameView !=null) {
+            gameView.pauseGame(); // change flag to pause the game
+            gameView.releaseMediaPlayer(); // release the media player on pause to free resources
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (gameView !=null) {
+            gameView.releaseMediaPlayer();
+        }
     }
 
 
-    // button action
+    /**
+     * Handles the new game button click event.
+     *
+     * @param v The view that was clicked
+     */
     public void onNewGameClicked(View v) {
 
         Log.d("MainActivity  BUTTON", "User tapped the button ... MAIN");
@@ -98,8 +127,11 @@ public class MainActivity extends AppCompatActivity {
         v.setVisibility(View.GONE);
     }
 
+    /**
+     * Shows the new game button.
+     */
     public void showNewGameButton() {
-        findViewById(R.id.button_newGame).setVisibility(View.VISIBLE);
+        findViewById(R.id.buttonNewGame).setVisibility(View.VISIBLE);
     }
 
 }
