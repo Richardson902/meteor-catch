@@ -65,15 +65,17 @@ public class MainActivity extends AppCompatActivity {
      * Sets up the sensors for the game.
      */
     private void setupSensors() {
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        mySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        try {
+            mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+            mySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
-        // Use the accelerometer.
-        if (mySensor != null){
-            Log.d("SENSORS", "Accelerometer found." );
-        }
-        else{
-            Log.w("SENSORS", "No accelerometer found. You can't play this game." );
+            if (mySensor != null) {
+                Log.d("SENSORS", "Accelerometer found.");
+            } else {
+                Log.w("SENSORS", "No accelerometer found. You can't play this game.");
+            }
+        } catch (Exception e) {
+            Log.e("SENSORS", "Error setting up sensors.", e);
         }
     }
 
