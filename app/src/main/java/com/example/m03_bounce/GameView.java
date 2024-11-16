@@ -125,10 +125,9 @@ public class GameView extends View implements SensorEventListener {
         recordView.setText("");
 
         if (!isGameStarted) {
-            isGameStarted = true;
+            setGameStarted(true);
             fallingObject.resetSpeed();
             fallingObject.resetPosition();
-            Log.d("GameView", "Game started = " + isGameStarted);
             try {
                 gameHandler.post(gameRunnable);
             } catch (Exception e) {
@@ -144,6 +143,7 @@ public class GameView extends View implements SensorEventListener {
      */
     public void setGameStarted(boolean isGameStarted) {
         this.isGameStarted = isGameStarted;
+        Log.d("GameView", "Game started = " + isGameStarted);
     }
 
     /**
@@ -203,30 +203,37 @@ public class GameView extends View implements SensorEventListener {
         isGamePaused = true;
     }
 
+    public boolean getIsGamePaused() {
+        return isGamePaused; // Ugly, but needed for testing
+    }
+
     public void resumeGame() {
         isGamePaused = false;
         gameHandler.post(gameRunnable);
     }
 
+    /**
+     * The game loop runnable.
+     */
     private final Runnable gameRunnable = new Runnable() {
         @Override
         public void run() {
             if (isGameStarted && !isGamePaused) {
-                fallingObject.moveWithCollisionDetection(box);
+                fallingObject.moveWithCollisionDetection(box); // Move the falling object if the game is started
                 if (basket.collectedObject(fallingObject)) {
-                    score += fallingObject.getValue();
-                    scoreView.post(() -> scoreView.setText("Score: " + score));
+                    score += fallingObject.getValue(); // Increase the score if the falling object is collected
+                    scoreView.post(() -> scoreView.setText("Score: " + score)); // Update the score view
                     updateRecord();
 
-                    double currentSpeedResistance = fallingObject.getSpeedResistance();
+                    double currentSpeedResistance = fallingObject.getSpeedResistance(); // Get the current speed resistance and acceleration resistance
                     double currentAccResistance = fallingObject.getAccResistance();
 
-                    fallingObject = createRandomFallingObject();
+                    fallingObject = createRandomFallingObject(); // Create a new falling object
 
-                    fallingObject.setSpeedResistance(currentSpeedResistance);
+                    fallingObject.setSpeedResistance(currentSpeedResistance); // Set the speed resistance and acceleration resistance
                     fallingObject.setAccResistance(currentAccResistance);
 
-                    fallingObject.increaseSpeed();
+                    fallingObject.increaseSpeed(); // Increase the speed of the falling object for the next iteration
                     Log.d("GameView", "speed = " + fallingObject.getAccResistance() + " " + fallingObject.getAccResistance());
                 }
                 postInvalidate();
@@ -255,8 +262,6 @@ public class GameView extends View implements SensorEventListener {
             az = event.values[2];   // z component of Accelerometer
 
             fallingObject.setAcc(ax, ay, az);
-
-            Log.d("onSensorChanged", "ax=" + ax + " ay=" + ay + " az=" + az);
         }
     }
 

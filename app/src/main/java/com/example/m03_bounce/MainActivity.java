@@ -43,12 +43,16 @@ public class MainActivity extends AppCompatActivity {
         // get the view object so we can reference it later
         gameView = (GameView) findViewById(R.id.custView);
 
-        TextView scoreView = findViewById(R.id.scoreView);
-        TextView recordView = findViewById(R.id.recordView);
-        gameView.setTextViews(scoreView, recordView);
+        initializeTextViews();
 
         //Check sensors
         setupSensors();
+    }
+
+    private void initializeTextViews() {
+        TextView scoreView = findViewById(R.id.scoreView);
+        TextView recordView = findViewById(R.id.recordView);
+        gameView.setTextViews(scoreView, recordView);
     }
 
 
@@ -62,18 +66,14 @@ public class MainActivity extends AppCompatActivity {
      */
     private void setupSensors() {
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
+        mySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         // Use the accelerometer.
-        if (mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null){
-            mySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
-            //my_Sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
+        if (mySensor != null){
+            Log.d("SENSORS", "Accelerometer found." );
         }
         else{
-            // Sorry, there are no accelerometers on your device.
-            // You can't play this game.
-            Log.d("SENSORS", "NO SENSOR TYPE?" );
+            Log.w("SENSORS", "No accelerometer found. You can't play this game." );
         }
     }
 
@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
             }
             gameView.initializeMediaPlayer(); // initialize the media player on resume
             gameView.resumeGame(); // change flag to resume the game
+            Log.d( "MainActivity", "Game paused = " + gameView.getIsGamePaused());
         } else {
             Log.d("SENSORS", "onResume gameView is null" );
         }
@@ -100,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
         if (gameView !=null) {
             gameView.pauseGame(); // change flag to pause the game
             gameView.releaseMediaPlayer(); // release the media player on pause to free resources
+            Log.d( "MainActivity", "Game paused = " + gameView.getIsGamePaused());
         }
     }
 
@@ -107,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (gameView !=null) {
-            gameView.releaseMediaPlayer();
+            gameView.releaseMediaPlayer(); // release the media player on destroy to free resources
         }
     }
 
